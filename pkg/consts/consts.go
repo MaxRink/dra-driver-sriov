@@ -113,6 +113,10 @@ var ReservedAttributes = map[resourceapi.QualifiedName]bool{
 	AttributeStandardPciAddress: true,
 	AttributeLinkType:           true,
 	AttributeRDMACapable:        true,
+	AttributeVdpaType:           true,
+	AttributePKey:               true,
+	AttributeRepresentor:        true,
+	AttributePhysPortName:       true,
 	AttributeNUMANode:           true,
 }
 
