@@ -30,6 +30,21 @@ func testPtr[T any](value T) *T {
 	return p
 }
 
+var _ = Describe("native VF link type validation", func() {
+	It("rejects every Ethernet-only option on InfiniBand, including explicit zero values", func() {
+		for _, cfg := range []*VFLinkConfig{
+			{VLAN: new(int)}, {Qos: new(int)}, {VlanProto: testPtr(VlanProto8021q)},
+			{SpoofChk: new(bool)}, {Trust: new(bool)}, {MinTxRate: new(int)}, {MaxTxRate: new(int)},
+		} {
+			Expect(cfg.ValidateLinkType(consts.LinkTypeInfiniband)).To(MatchError(ContainSubstring("only supports linkState")))
+			Expect(cfg.ValidateLinkType(consts.LinkTypeEthernet)).To(Succeed())
+		}
+	})
+	It("allows native link state on InfiniBand", func() {
+		Expect((&VFLinkConfig{LinkState: testPtr(LinkStateEnable)}).ValidateLinkType(consts.LinkTypeInfiniband)).To(Succeed())
+	})
+})
+
 var _ = Describe("VfConfig", func() {
 	Describe("DefaultVfConfig", func() {
 		It("should return a valid default config", func() {
