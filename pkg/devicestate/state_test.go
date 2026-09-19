@@ -1373,6 +1373,22 @@ var _ = Describe("Manager", Serial, func() {
 			Expect(preparedDevice.OriginalVFConfig).To(Equal(&configapi.VFLinkConfig{Trust: ptr.To(false)}))
 		})
 
+		It("rejects unsupported InfiniBand options before any host operation", func() {
+			m := newTestManagerWithK8sClient()
+			m.configurationMode = string(consts.ConfigurationModeStandalone)
+			m.allocatable = drasriovtypes.AllocatableDevices{
+				"device1": {Attributes: map[resourceapi.QualifiedName]resourceapi.DeviceAttribute{
+					consts.AttributeLinkType: {StringValue: ptr.To(consts.LinkTypeInfiniband)},
+				}},
+			}
+			config := &configapi.VfConfig{Driver: "netdevice", NetAttachDefName: "test-net", VF: &configapi.VFLinkConfig{Trust: ptr.To(false)}}
+			result := &resourceapi.DeviceRequestAllocationResult{Device: "device1"}
+			index := 0
+			prepared, err := m.applyConfigOnDevice(context.Background(), &index, &resourceapi.ResourceClaim{}, config, result)
+			Expect(prepared).To(BeNil())
+			Expect(err).To(MatchError(ContainSubstring("native InfiniBand VF configuration only supports linkState")))
+		})
+
 		It("prevents CNI from overwriting DRA-owned VF attributes", func() {
 			netAttachDef := &netattdefv1.NetworkAttachmentDefinition{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-net", Namespace: "test-ns"},

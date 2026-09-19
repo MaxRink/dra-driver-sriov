@@ -1,6 +1,10 @@
 package v1alpha1
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/k8snetworkplumbingwg/dra-driver-sriov/pkg/consts"
+)
 
 // VF attribute bounds and allowed values.
 const (
@@ -80,6 +84,17 @@ func (v *VFLinkConfig) validate() error {
 	}
 	if v.MinTxRate != nil && v.MaxTxRate != nil && *v.MinTxRate > *v.MaxTxRate {
 		return fmt.Errorf("minTxRate %d must not exceed maxTxRate %d", *v.MinTxRate, *v.MaxTxRate)
+	}
+	return nil
+}
+
+// ValidateLinkType rejects native VF options not supported by IPoIB. The kernel
+// IPoIB PF exposes VF link state, but no VLAN, spoof checking, trust or rate setters.
+func (v *VFLinkConfig) ValidateLinkType(linkType string) error {
+	if linkType == consts.LinkTypeInfiniband || linkType == consts.LinkTypeIB {
+		if v.VLAN != nil || v.Qos != nil || v.VlanProto != nil || v.SpoofChk != nil || v.Trust != nil || v.MinTxRate != nil || v.MaxTxRate != nil {
+			return fmt.Errorf("native InfiniBand VF configuration only supports linkState; vlan, qos, vlanProto, spoofChk, trust, minTxRate and maxTxRate are unsupported")
+		}
 	}
 	return nil
 }

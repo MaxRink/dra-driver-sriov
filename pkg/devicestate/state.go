@@ -261,6 +261,15 @@ func (s *Manager) applyConfigOnDevice(ctx context.Context, ifNameIndex *int, cla
 	if !exist {
 		return nil, fmt.Errorf("device %s not found in allocatable devices", result.Device)
 	}
+	// Reject unsupported native options before persisting cleanup metadata or
+	// binding a driver. MULTUS leaves VF configuration to its CNI plugin.
+	if s.isStandaloneMode() && config.VF != nil {
+		if linkType := deviceInfo.Attributes[consts.AttributeLinkType].StringValue; linkType != nil {
+			if err := config.VF.ValidateLinkType(*linkType); err != nil {
+				return nil, fmt.Errorf("cannot configure native VF attributes for device %s: %w", result.Device, err)
+			}
+		}
+	}
 	// if in multus mode, we try to get the multus resource name and device ID from the device attributes
 	var multusResourceName string
 	var multusDeviceID string
@@ -440,7 +449,7 @@ func (s *Manager) applyConfigOnDevice(ctx context.Context, ifNameIndex *int, cla
 		if s.iommuAvailable {
 			cdevPath, err = host.GetHelpers().GetVFIOCdevPath(pciAddress)
 			if err != nil {
-				return nil, restoreDriverOnError(fmt.Errorf("error getting VFIO cdev for device %s: %w", pciAddress, err))
+				return nil, rollbackOnError(fmt.Errorf("error getting VFIO cdev for device %s: %w", pciAddress, err))
 			}
 			if cdevPath != "" {
 				deviceNodes = append(deviceNodes, &cdispec.DeviceNode{
