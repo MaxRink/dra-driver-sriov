@@ -192,7 +192,7 @@ func (s *Manager) prepareDevices(ctx context.Context, ifNameIndex *int,
 			config = configapi.DefaultVfConfig()
 		}
 		config.Normalize()
-		if config.VF != nil {
+		if s.isStandaloneMode() && config.VF != nil {
 			if err := config.Validate(); err != nil {
 				return nil, fmt.Errorf("invalid VfConfig for request %s: %w", result.Request, err)
 			}
@@ -896,7 +896,6 @@ func (s *Manager) unprepareDevicesWithOwnership(preparedDevices drasriovtypes.Pr
 		if preparedDevice.NativeVFAttributesOwned {
 			if err := resetVFAttributes(logger, preparedDevice); err != nil {
 				logger.Error(err, "Failed to reset native VF attributes", "device", preparedDevice.PciAddress)
-				errs = append(errs, err)
 			}
 		} else if preparedDevice.Config.VF != nil {
 			logger.V(2).Info("Skipping VF attribute reset because native attributes are not owned", "device", preparedDevice.PciAddress)

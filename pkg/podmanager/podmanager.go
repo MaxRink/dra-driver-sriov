@@ -29,7 +29,11 @@ func NewPodManager(config *drasriovtypes.Config) (*PodManager, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to create checkpoint manager: %v", err)
 	}
+	return NewPodManagerWithCheckpointManager(checkpointManager)
+}
 
+// NewPodManagerWithCheckpointManager creates a PodManager using an injected checkpoint manager.
+func NewPodManagerWithCheckpointManager(checkpointManager checkpointmanager.CheckpointManager) (*PodManager, error) {
 	checkpoints, err := checkpointManager.ListCheckpoints()
 	if err != nil {
 		return nil, fmt.Errorf("unable to list checkpoints: %v", err)
@@ -147,8 +151,15 @@ func (s *PodManager) GetDevicesByPodUID(podUID types.UID) (drasriovtypes.Prepare
 func (s *PodManager) DeletePod(podUID types.UID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	claims, found := s.preparedClaimsByPodUID[podUID]
 	delete(s.preparedClaimsByPodUID, podUID)
-	return s.syncToCheckpoint()
+	if err := s.syncToCheckpoint(); err != nil {
+		if found {
+			s.preparedClaimsByPodUID[podUID] = claims
+		}
+		return err
+	}
+	return nil
 }
 
 // GetByClaim retrieves the configuration for a specific claim.
@@ -175,8 +186,13 @@ func (s *PodManager) UpdatePreparedDeviceNetworkData(preparedDevice *drasriovtyp
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	previous := preparedDevice.NetworkDeviceData
 	preparedDevice.SetNetworkDeviceData(networkData)
-	return s.syncToCheckpoint()
+	if err := s.syncToCheckpoint(); err != nil {
+		preparedDevice.NetworkDeviceData = previous
+		return err
+	}
+	return nil
 }
 
 // DeleteClaim removes all configurations associated with a given claim.
@@ -186,7 +202,10 @@ func (s *PodManager) DeleteClaim(claim kubeletplugin.NamespacedObject) error {
 	defer s.mu.Unlock()
 	oldPreparedClaimsByPodUID := make(drasriovtypes.PreparedClaimsByPodUID, len(s.preparedClaimsByPodUID))
 	for podUID, devicesByClaimID := range s.preparedClaimsByPodUID {
-		oldPreparedClaimsByPodUID[podUID] = devicesByClaimID
+		oldPreparedClaimsByPodUID[podUID] = make(drasriovtypes.PreparedDevicesByClaimID, len(devicesByClaimID))
+		for claimID, devices := range devicesByClaimID {
+			oldPreparedClaimsByPodUID[podUID][claimID] = devices
+		}
 	}
 	oldPending, hadPending := s.pendingPreparedDevicesByClaimID[claim.UID]
 	podsToDelete := []types.UID{}
@@ -194,13 +213,15 @@ func (s *PodManager) DeleteClaim(claim kubeletplugin.NamespacedObject) error {
 		_, found := preparedDevicesByClaimID[claim.UID]
 		if found {
 			podsToDelete = append(podsToDelete, uid)
-			break
 		}
 	}
 
 	if len(podsToDelete) > 0 {
 		for _, uid := range podsToDelete {
-			delete(s.preparedClaimsByPodUID, uid)
+			delete(s.preparedClaimsByPodUID[uid], claim.UID)
+			if len(s.preparedClaimsByPodUID[uid]) == 0 {
+				delete(s.preparedClaimsByPodUID, uid)
+			}
 		}
 		delete(s.pendingPreparedDevicesByClaimID, claim.UID)
 		if err := s.syncToCheckpoint(); err != nil {

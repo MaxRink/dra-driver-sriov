@@ -993,7 +993,10 @@ var _ = Describe("Manager", Serial, func() {
 				},
 			} {
 				By(testCase.name)
-				m := &Manager{allocatable: drasriovtypes.AllocatableDevices{}}
+				m := &Manager{
+					allocatable:       drasriovtypes.AllocatableDevices{},
+					configurationMode: string(consts.ConfigurationModeStandalone),
+				}
 				config := &configapi.VfConfig{
 					Driver:           "netdevice",
 					NetAttachDefName: "test-net",

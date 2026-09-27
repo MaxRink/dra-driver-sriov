@@ -967,7 +967,7 @@ func (h *Host) ConfigureVF(pfName string, vfIndex *int, cfg *configapi.VFLinkCon
 
 	// VLAN/QoS/proto are programmed together because netlink applies them via a
 	// single message. Only issue the call when at least one of them is requested.
-	if original.VLAN != nil {
+	if cfg.VLAN != nil {
 		vlan := valueOrZero(cfg.VLAN)
 		qos := valueOrZero(cfg.Qos)
 		proto := valueOrEmpty(cfg.VlanProto)
@@ -984,7 +984,7 @@ func (h *Host) ConfigureVF(pfName string, vfIndex *int, cfg *configapi.VFLinkCon
 		}
 	}
 
-	if original.SpoofChk != nil {
+	if cfg.SpoofChk != nil {
 		if err := apply(
 			"spoofchk",
 			func() error {
@@ -998,7 +998,7 @@ func (h *Host) ConfigureVF(pfName string, vfIndex *int, cfg *configapi.VFLinkCon
 		}
 	}
 
-	if original.Trust != nil {
+	if cfg.Trust != nil {
 		if err := apply(
 			"trust",
 			func() error {
@@ -1012,7 +1012,7 @@ func (h *Host) ConfigureVF(pfName string, vfIndex *int, cfg *configapi.VFLinkCon
 		}
 	}
 
-	if original.MinTxRate != nil {
+	if cfg.MinTxRate != nil {
 		minRate := valueOrZero(cfg.MinTxRate)
 		maxRate := valueOrZero(cfg.MaxTxRate)
 		if err := apply(
@@ -1029,7 +1029,7 @@ func (h *Host) ConfigureVF(pfName string, vfIndex *int, cfg *configapi.VFLinkCon
 	}
 
 	// link_state is applied last.
-	if original.LinkState != nil {
+	if cfg.LinkState != nil {
 		if err := apply(
 			"link state",
 			func() error {
