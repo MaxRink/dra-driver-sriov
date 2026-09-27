@@ -186,6 +186,9 @@ func (s *Manager) prepareDevices(ctx context.Context, ifNameIndex *int,
 		}
 		config, ok := resultsConfig[result.Request]
 		if !ok {
+			config, ok = resultsConfig[""]
+		}
+		if !ok {
 			config = configapi.DefaultVfConfig()
 		}
 		config.Normalize()
