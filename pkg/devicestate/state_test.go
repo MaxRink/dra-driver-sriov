@@ -352,7 +352,7 @@ var _ = Describe("Manager", Serial, func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should return an error when VF reset fails", func() {
+		It("should log and continue when VF reset fails", func() {
 			preparedDevices := drasriovtypes.PreparedDevices{
 				&drasriovtypes.PreparedDevice{
 					PciAddress: "0000:01:00.1",
@@ -373,8 +373,7 @@ var _ = Describe("Manager", Serial, func() {
 
 			m := &Manager{}
 			err := m.unprepareDevices(preparedDevices)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("failed to reset native VF attributes"))
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should skip VF reset in MULTUS mode", func() {
