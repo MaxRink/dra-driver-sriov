@@ -973,14 +973,22 @@ var _ = Describe("Manager", Serial, func() {
 
 			for _, testCase := range []struct {
 				name string
+				key  string
 				vf   *configapi.VFLinkConfig
 			}{
 				{
 					name: "reversed rates",
+					key:  "req1",
 					vf:   &configapi.VFLinkConfig{MinTxRate: ptr.To(1000), MaxTxRate: ptr.To(100)},
 				},
 				{
 					name: "negative minimum rate",
+					key:  "req1",
+					vf:   &configapi.VFLinkConfig{MinTxRate: ptr.To(-1), MaxTxRate: ptr.To(100)},
+				},
+				{
+					name: "invalid default config",
+					key:  "",
 					vf:   &configapi.VFLinkConfig{MinTxRate: ptr.To(-1), MaxTxRate: ptr.To(100)},
 				},
 			} {
@@ -993,7 +1001,7 @@ var _ = Describe("Manager", Serial, func() {
 				}
 
 				ifNameIndex := 0
-				_, err := m.prepareDevices(context.Background(), &ifNameIndex, claim, map[string]*configapi.VfConfig{"req1": config})
+				_, err := m.prepareDevices(context.Background(), &ifNameIndex, claim, map[string]*configapi.VfConfig{testCase.key: config})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("invalid VfConfig"))
 			}
