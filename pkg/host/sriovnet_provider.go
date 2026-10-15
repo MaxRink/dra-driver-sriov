@@ -4,6 +4,8 @@ import "github.com/k8snetworkplumbingwg/sriovnet"
 
 // SriovnetProvider wraps sriovnet library calls to allow mocking in unit tests.
 type SriovnetProvider interface {
+	// GetDefaultPKeyFromPci returns the default InfiniBand partition key for a PCI device.
+	GetDefaultPKeyFromPci(pciAddr string) (string, error)
 	// GetUplinkRepresentor returns the PF uplink netdev name for a given PCI
 	// address (PF or VF).
 	GetUplinkRepresentor(pciAddr string) (string, error)
@@ -19,6 +21,10 @@ var _ SriovnetProvider = &defaultSriovnetProvider{}
 
 func (defaultSriovnetProvider) GetUplinkRepresentor(pciAddr string) (string, error) {
 	return sriovnet.GetUplinkRepresentor(pciAddr)
+}
+
+func (defaultSriovnetProvider) GetDefaultPKeyFromPci(pciAddr string) (string, error) {
+	return sriovnet.GetDefaultPKeyFromPci(pciAddr)
 }
 
 func (defaultSriovnetProvider) GetVfRepresentor(uplink string, vfIndex int) (string, error) {

@@ -392,7 +392,8 @@ var _ = Describe("Host", func() {
 				}
 				tearDown = fs.Use()
 
-				Expect(h.GetIBPKey("0000:02:00.1")).To(Equal("0x7fff"))
+				hTest := host.NewHostForTest(nil, &host.FakeSriovnetProvider{DefaultPKey: "0x7fff\n"})
+				Expect(hTest.GetIBPKey("0000:02:00.1")).To(Equal("0x7fff"))
 			})
 
 			It("should return empty string when the netdev has no pkey file", func() {

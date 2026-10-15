@@ -382,32 +382,16 @@ func (h *Host) GetVdpaType(pciAddr string) string {
 	return ""
 }
 
-// GetIBPKey returns the InfiniBand partition key (pkey) of the VF identified by
-// pciAddr. It resolves the VF's own netdev (/sys/bus/pci/devices/<pci>/net/<name>)
-// and reads /sys/class/net/<name>/pkey.
-//
-// Unlike TryGetPFInterfaceName (which is PF-only), this reads the VF's netdev
-// directly from sysfs. It returns "" when the VF has no netdev or the device is
-// not InfiniBand (no pkey file).
+// GetIBPKey returns the default InfiniBand partition key of the VF identified by
+// pciAddr. The lookup follows the PCI device's InfiniBand port hierarchy and
+// does not require an optional IPoIB netdev.
 func (h *Host) GetIBPKey(pciAddr string) string {
-	netDir := buildSysBusPciPath(pciAddr, "net")
-	entries, err := os.ReadDir(netDir)
+	pkey, err := h.sriovnetProvider.GetDefaultPKeyFromPci(pciAddr)
 	if err != nil {
-		h.log.V(4).Info("failed to read net directory for pkey lookup", "pciAddr", pciAddr, "err", err)
+		h.log.V(4).Info("failed to read pkey", "pciAddr", pciAddr, "err", err)
 		return ""
 	}
-	if len(entries) == 0 {
-		return ""
-	}
-	ifName := entries[0].Name()
-
-	pkeyPath := buildSysPath(fmt.Sprintf("/sys/class/net/%s/pkey", ifName))
-	content, err := os.ReadFile(pkeyPath) /* #nosec G304 */
-	if err != nil {
-		h.log.V(4).Info("failed to read pkey", "pciAddr", pciAddr, "interface", ifName, "err", err)
-		return ""
-	}
-	return strings.TrimSpace(string(content))
+	return strings.TrimSpace(pkey)
 }
 
 // GetVFRepresentor returns the host-side switchdev representor netdev name for

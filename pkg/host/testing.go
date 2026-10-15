@@ -41,6 +41,8 @@ func (f *FakeNetlinkProvider) GetDevLinkDeviceEswitchMode(_ string) (string, err
 
 // FakeSriovnetProvider is a configurable SriovnetProvider for use in unit tests.
 type FakeSriovnetProvider struct {
+	DefaultPKey      string
+	DefaultPKeyError error
 	// UplinkName is returned by GetUplinkRepresentor on success.
 	UplinkName string
 	// UplinkError, when non-nil, is returned instead of UplinkName.
@@ -49,6 +51,10 @@ type FakeSriovnetProvider struct {
 	RepresentorName string
 	// RepresentorError, when non-nil, is returned instead of RepresentorName.
 	RepresentorError error
+}
+
+func (f *FakeSriovnetProvider) GetDefaultPKeyFromPci(_ string) (string, error) {
+	return f.DefaultPKey, f.DefaultPKeyError
 }
 
 func (f *FakeSriovnetProvider) GetUplinkRepresentor(_ string) (string, error) {
