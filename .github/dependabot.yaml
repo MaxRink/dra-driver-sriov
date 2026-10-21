@@ -32,3 +32,46 @@ updates:
         - "*"
       exclude-patterns:
         - "k8s.io/*"
+- package-ecosystem: docker
+  directories:
+  - /deployments/container
+  - /docker
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 5
+  groups:
+    routine-updates:
+      patterns:
+      - '*'
+      update-types:
+      - minor
+      - patch
+- package-ecosystem: github-actions
+  directories:
+  - /.github/actions/collect-virtual-e2e-logs
+  - /.github/actions/deploy-virtual-cluster
+  - /.github/actions/run-e2e-workloads
+  - /.github/actions/setup-virtual-e2e-host
+  - /.github/actions/upload-e2e-reports
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 5
+  groups:
+    routine-updates:
+      patterns:
+      - '*'
+      update-types:
+      - minor
+      - patch
+- package-ecosystem: helm
+  directory: /deployments/helm/dra-driver-sriov
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 5
+  groups:
+    routine-updates:
+      patterns:
+      - '*'
+      update-types:
+      - minor
+      - patch
