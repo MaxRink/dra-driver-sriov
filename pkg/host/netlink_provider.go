@@ -111,7 +111,7 @@ func (defaultNetlinkProvider) GetVfLinkConfig(pfName string, vf int) (*configapi
 		vlan := info.Vlan
 		qos := info.Qos
 		spoofChk := info.Spoofchk
-		trust := info.Trust
+		trust := info.Trust != 0
 		minTxRate := int(info.MinTxRate)
 		maxTxRate := int(info.MaxTxRate)
 		return &configapi.VFLinkConfig{

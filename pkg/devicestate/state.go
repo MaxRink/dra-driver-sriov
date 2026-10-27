@@ -894,8 +894,11 @@ func (s *Manager) unprepareDevicesWithOwnership(preparedDevices drasriovtypes.Pr
 		// Ownership is recorded when the VF attributes are applied. Do not infer it
 		// from the current mode, which may have changed since prepare.
 		if preparedDevice.NativeVFAttributesOwned {
+			// A failed reset leaves the VF with claim-specific attributes, so report it
+			// and let kubelet retry Unprepare. The driver restore below still runs.
 			if err := resetVFAttributes(logger, preparedDevice); err != nil {
 				logger.Error(err, "Failed to reset native VF attributes", "device", preparedDevice.PciAddress)
+				errs = append(errs, err)
 			}
 		} else if preparedDevice.Config.VF != nil {
 			logger.V(2).Info("Skipping VF attribute reset because native attributes are not owned", "device", preparedDevice.PciAddress)

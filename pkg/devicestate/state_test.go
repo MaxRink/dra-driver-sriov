@@ -352,13 +352,15 @@ var _ = Describe("Manager", Serial, func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should log and continue when VF reset fails", func() {
+		It("should return an error when VF reset fails and still restore the driver", func() {
 			preparedDevices := drasriovtypes.PreparedDevices{
 				&drasriovtypes.PreparedDevice{
 					PciAddress: "0000:01:00.1",
 					Config: &configapi.VfConfig{
-						VF: &configapi.VFLinkConfig{Trust: ptr.To(true)},
+						Driver: "vfio-pci",
+						VF:     &configapi.VFLinkConfig{Trust: ptr.To(true)},
 					},
+					OriginalDriver:          "ixgbevf",
 					NativeVFAttributesOwned: true,
 					OriginalVFConfig:        &configapi.VFLinkConfig{Trust: ptr.To(false)},
 					DeviceAttributes: map[string]resourceapi.DeviceAttribute{
@@ -370,10 +372,12 @@ var _ = Describe("Manager", Serial, func() {
 
 			mockHost.EXPECT().TryGetPFInterfaceName("0000:01:00.0").Return("eth0")
 			mockHost.EXPECT().ResetVF("eth0", ptr.To(3), &configapi.VFLinkConfig{Trust: ptr.To(false)}).Return(fmt.Errorf("netlink failed"))
+			mockHost.EXPECT().RestoreDeviceDriver("0000:01:00.1", "ixgbevf").Return(nil)
 
 			m := &Manager{}
 			err := m.unprepareDevices(preparedDevices)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to reset native VF attributes"))
 		})
 
 		It("should skip VF reset in MULTUS mode", func() {
